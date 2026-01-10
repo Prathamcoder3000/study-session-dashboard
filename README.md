@@ -246,3 +246,5 @@ This project uses a **Rule-Based Agentic AI**.
     Agentic AI
     Hardware simulation
 
+### DEMO VIDEO - 
+https://github.com/user-attachments/assets/4d752ca9-3ca6-4b43-b67e-c6fca618bd4e
