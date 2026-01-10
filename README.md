@@ -245,3 +245,6 @@ This project uses a **Rule-Based Agentic AI**.
     Database
     Agentic AI
     Hardware simulation
+
+### Video implementation :-
+<video controls src="screen-recording-2026-01-10-201100_wAztw0Cw.mp4" title="Title"></video>
