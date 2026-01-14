@@ -152,45 +152,58 @@ export default function StudySetupPage() {
         }),
       }
 
-      // 1️⃣ Send sensor data (already working)
+
+
+
       await fetch("http://127.0.0.1:8000/sensor-data", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-      student_id: userIdToSend,
-      subject: subject.subject,
-      subject_strength: subject.subject_strength,
-      heart_rate: simulatedHeartRate,
-      gsr: Number.parseFloat(simulatedGSR.toFixed(2)),
-    }),
-  })
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          student_id: userIdToSend,
+          subject: subject.subject,
+          subject_strength: subject.subject_strength, // ⚠️ NUMBER ONLY
+          heart_rate: simulatedHeartRate,
+          gsr: Number.parseFloat(simulatedGSR.toFixed(2)),
+        }),
+      })
 
 
-    // 2️⃣ RUN AGENT (DECLARE ONLY ONCE)
+    // 🔹 Call AI Agent
     const agentResponse = await fetch(
-    `http://127.0.0.1:8000/run-agent/${userIdToSend}`,
-    { method: "POST" }
-   )
+      `http://127.0.0.1:8000/run-agent/${userIdToSend}/${subject.subject}`,
+      { method: "POST" }
+    )
 
-   const agentResult = await agentResponse.json()
+    const agentResult = await agentResponse.json()
+
+
+    
       // Keep local fallback copy
       const localSession = {
         student_id: userIdToSend,
         subject: subject.subject,
         subject_strength: subject.subject_strength,
+
         planned_study_duration: Number.parseInt(formData.planned_study_duration),
         preferred_time_of_day: formData.preferred_time_of_day,
         preferred_break_duration: Number.parseInt(formData.preferred_break_duration),
+
         avg_heart_rate_bpm: simulatedHeartRate,
         gsr_value: Number.parseFloat(simulatedGSR.toFixed(2)),
         stress_index: randomStress,
-        // 🔥 AGENT OUTPUT (REAL INTELLIGENCE)
+
+        // ✅ ADD THIS LINE
+        stress_trend: agentResult.stress_trend,
         detected_study_state: agentResult.study_state,
         recommended_study_duration: agentResult.study_duration,
         recommended_break_duration: agentResult.break_duration,
+
         subject_priority: agentResult.priority || subject.subject_priority || "Medium",
         daily_study_plan_text: formData.daily_study_plan_text || "NA",
       }
+
+
+
       //temporary logs
       // console.log("LOCAL SESSION CREATED:", localSession)
 
@@ -199,20 +212,7 @@ export default function StudySetupPage() {
       existingSessions.unshift(localSession)
       localStorage.setItem("studySessions", JSON.stringify(existingSessions))
 
-      // 🔹 Send data to FastAPI backend (Agent input)
-      fetch('http://127.0.0.1:8000/sensor-data', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          student_id: userIdToSend,
-          subject: subject.subject,
-          subject_strength: subject.subject_strength === 1 ? "strong" : "weak",
-          heart_rate: simulatedHeartRate,
-          gsr: Number.parseFloat(simulatedGSR.toFixed(2)),
-        }),
-      })
+      
 
        
 

@@ -62,9 +62,17 @@ interface StudySession {
   detected_study_state: string
   recommended_study_duration: number
   recommended_break_duration: number
+
+  // 🔥 ADD THIS
+  stress_trend?: "Increasing" | "Decreasing" | "Stable"
+
+  study_duration?: number
+  break_duration?: number
+
   subject_priority: string
   daily_study_plan_text: string
 }
+
 
 type ScheduledReview = {
   id: string
@@ -105,120 +113,7 @@ const getRecommendations = () => {
   ]
 }
 
-const mockStudySessions: StudySession[] = [
-  {
-    student_id: "S01",
-    subject: "Math",
-    subject_strength: "Weak",
-    planned_study_duration: 45,
-    preferred_time_of_day: "Morning",
-    preferred_break_duration: 10,
-    avg_heart_rate_bpm: 78,
-    gsr_value: 4.2,
-    stress_index: "High",
-    detected_study_state: "Stressed",
-    recommended_study_duration: 30,
-    recommended_break_duration: 15,
-    subject_priority: "High",
-    daily_study_plan_text: "Focus on algebra and calculus basics with frequent breaks",
-  },
-  {
-    student_id: "S01",
-    subject: "Physics",
-    subject_strength: "Strong",
-    planned_study_duration: 60,
-    preferred_time_of_day: "Afternoon",
-    preferred_break_duration: 10,
-    avg_heart_rate_bpm: 72,
-    gsr_value: 3.1,
-    stress_index: "Low",
-    detected_study_state: "Focused",
-    recommended_study_duration: 50,
-    recommended_break_duration: 10,
-    subject_priority: "Medium",
-    daily_study_plan_text: "Continue with mechanics and thermodynamics chapters",
-  },
-  {
-    student_id: "S02",
-    subject: "Chemistry",
-    subject_strength: "Weak",
-    planned_study_duration: 40,
-    preferred_time_of_day: "Evening",
-    preferred_break_duration: 15,
-    avg_heart_rate_bpm: 85,
-    gsr_value: 5.8,
-    stress_index: "Medium",
-    detected_study_state: "Anxious",
-    recommended_study_duration: 25,
-    recommended_break_duration: 20,
-    subject_priority: "High",
-    daily_study_plan_text: "Review organic chemistry reactions with visual aids",
-  },
-  {
-    student_id: "S02",
-    subject: "Math",
-    subject_strength: "Strong",
-    planned_study_duration: 55,
-    preferred_time_of_day: "Morning",
-    preferred_break_duration: 10,
-    avg_heart_rate_bpm: 70,
-    gsr_value: 2.9,
-    stress_index: "Low",
-    detected_study_state: "Focused",
-    recommended_study_duration: 45,
-    recommended_break_duration: 10,
-    subject_priority: "Low",
-    daily_study_plan_text: "Practice advanced problem sets and competitive math",
-  },
-  {
-    student_id: "S02",
-    subject: "Physics",
-    subject_strength: "Weak",
-    planned_study_duration: 50,
-    preferred_time_of_day: "Afternoon",
-    preferred_break_duration: 12,
-    avg_heart_rate_bpm: 82,
-    gsr_value: 4.7,
-    stress_index: "High",
-    detected_study_state: "Stressed",
-    recommended_study_duration: 35,
-    recommended_break_duration: 18,
-    subject_priority: "High",
-    daily_study_plan_text: "Work on conceptual understanding with practical examples",
-  },
-  {
-    student_id: "S03",
-    subject: "Biology",
-    subject_strength: "Strong",
-    planned_study_duration: 70,
-    preferred_time_of_day: "Morning",
-    preferred_break_duration: 10,
-    avg_heart_rate_bpm: 68,
-    gsr_value: 2.5,
-    stress_index: "Low",
-    detected_study_state: "Focused",
-    recommended_study_duration: 60,
-    recommended_break_duration: 10,
-    subject_priority: "Low",
-    daily_study_plan_text: "Deep dive into cellular biology and genetics",
-  },
-  {
-    student_id: "S03",
-    subject: "Chemistry",
-    subject_strength: "Weak",
-    planned_study_duration: 45,
-    preferred_time_of_day: "Evening",
-    preferred_break_duration: 15,
-    avg_heart_rate_bpm: 88,
-    gsr_value: 6.1,
-    stress_index: "High",
-    detected_study_state: "Anxious",
-    recommended_study_duration: 30,
-    recommended_break_duration: 20,
-    subject_priority: "High",
-    daily_study_plan_text: "Start with simple stoichiometry and gradually increase difficulty",
-  },
-]
+
 
 export function StudySessionDashboard() {
   const [currentUser, setCurrentUser] = useState<string>("")
@@ -232,7 +127,7 @@ export function StudySessionDashboard() {
   const [scheduleTime, setScheduleTime] = useState("")
   const [scheduleNotes, setScheduleNotes] = useState("")
   const [scheduledReviews, setScheduledReviews] = useState<ScheduledReview[]>([])
-  const [studySessions, setStudySessions] = useState<StudySession[]>(mockStudySessions) // Initialize with mock data
+  const [studySessions, setStudySessions] = useState<StudySession[]>([])
 
   const router = useRouter()
  
@@ -247,8 +142,7 @@ export function StudySessionDashboard() {
     if (savedSessions) {
       const parsedSessions = JSON.parse(savedSessions)
       // Merge with mock data for demo purposes
-      setStudySessions([...parsedSessions, ...mockStudySessions])
-    }
+      setStudySessions(parsedSessions)    }
 
     const savedTheme = localStorage.getItem("theme") as "light" | "dark" | null
     if (savedTheme) {
@@ -279,53 +173,106 @@ export function StudySessionDashboard() {
   }
 
   const filteredSessions = studySessions.filter((s) => s.student_id === currentUser)
+  
 
   const paginatedSessions = filteredSessions.slice(0, visibleRows)
   const hasMore = visibleRows < filteredSessions.length
 
   const handleViewMore = () => {
-    setVisibleRows((prev) => Math.min(prev + 5, filteredSessions.length))
+    setVisibleRows(prev => prev + 5)
   }
 
-  useEffect(() => {
-    setVisibleRows(5)
-  }, [filteredSessions]) // Depend on filteredSessions which now depends on currentUser
+
+   // Depend on filteredSessions which now depends on currentUser
+  
+    const stressTrendSummary = useMemo(() => {
+    const trends = filteredSessions.map(s => s.stress_trend).filter(Boolean)
+    const inc = trends.filter(t => t === "Increasing").length
+    const dec = trends.filter(t => t === "Decreasing").length
+
+    if (inc > dec) return "Increasing"
+    if (dec > inc) return "Decreasing"
+    return "Stable"
+  }, [filteredSessions])
+
 
   const analytics = useMemo(() => {
     const avgHeartRate =
       filteredSessions.reduce((sum, s) => sum + s.avg_heart_rate_bpm, 0) / filteredSessions.length || 0
     const avgGSR = filteredSessions.reduce((sum, s) => sum + s.gsr_value, 0) / filteredSessions.length || 0
 
-    const stressLow = filteredSessions.filter((s) => s.stress_index === "Low").length
-    const stressMedium = filteredSessions.filter((s) => s.stress_index === "Medium").length
-    const stressHigh = filteredSessions.filter((s) => s.stress_index === "High").length
+    const stressLow = filteredSessions.filter(
+    (s) => s.detected_study_state === "Focused"
+    ).length
+
+    const stressMedium = filteredSessions.filter(
+      (s) => s.detected_study_state === "Fatigued"
+    ).length
+
+    const stressHigh = filteredSessions.filter(
+      (s) => s.detected_study_state === "Stressed"
+    ).length
+
+    const totalStress = stressLow + stressMedium + stressHigh
+
+    const lowStressPercent =
+      totalStress > 0 ? Math.round((stressLow / totalStress) * 100) : 0
+
+
 
     const avgStudyTime =
-      filteredSessions.reduce((sum, s) => sum + s.recommended_study_duration, 0) / filteredSessions.length || 0
+      filteredSessions.reduce(
+        (sum, s) => sum + (s.study_duration ?? s.recommended_study_duration ?? 0),
+        0
+      ) / filteredSessions.length || 0
+
     const avgBreakTime =
-      filteredSessions.reduce((sum, s) => sum + s.recommended_break_duration, 0) / filteredSessions.length || 0
+      filteredSessions.reduce(
+        (sum, s) => sum + (s.break_duration ?? s.recommended_break_duration ?? 0),
+        0
+      ) / filteredSessions.length || 0
+
 
     const subjectPerformance = filteredSessions.reduce(
       (acc, s) => {
         if (!acc[s.subject]) {
-          acc[s.subject] = { weak: 0, strong: 0 }
+          acc[s.subject] = {
+            total: 0,
+            focused: 0,
+          }
         }
-        if (s.subject_strength === "Weak") acc[s.subject].weak++
-        else acc[s.subject].strong++
+
+        acc[s.subject].total += 1
+
+        if (s.detected_study_state === "Focused") {
+          acc[s.subject].focused += 1
+        }
+
         return acc
       },
-      {} as Record<string, { weak: number; strong: number }>,
+      {} as Record<string, { total: number; focused: number }>,
     )
+
+
 
     const bestTimeOfDay = filteredSessions.reduce(
       (acc, s) => {
         const key = s.preferred_time_of_day
         if (!acc[key]) acc[key] = []
-        acc[key].push(s.stress_index === "Low" ? 1 : s.stress_index === "Medium" ? 0.5 : 0)
+
+        acc[key].push(
+          s.detected_study_state === "Focused"
+            ? 1
+            : s.detected_study_state === "Fatigued"
+            ? 0.5
+            : 0
+        )
+
         return acc
       },
       {} as Record<string, number[]>,
     )
+
 
     const bestTime =
       Object.entries(bestTimeOfDay)
@@ -352,17 +299,28 @@ export function StudySessionDashboard() {
       highStress: scores.filter((s) => s === 0).length,
     }))
 
-    const subjectRadarData = Object.entries(subjectPerformance).map(([subject, perf]) => ({
+    const subjectRadarData = Object.entries(subjectPerformance).map(
+    ([subject, perf]) => ({
       subject,
-      score: perf.strong + perf.weak > 0 ? Math.round((perf.strong / (perf.strong + perf.weak)) * 100) : 0, // Avoid division by zero
-      sessions: perf.strong + perf.weak,
-    }))
+      score: Math.round((perf.focused / perf.total) * 100),
+      sessions: perf.total,
+    })
+  )
 
-    const stressPieData = [
-      { name: "Low", value: stressLow, color: "#10b981" },
-      { name: "Medium", value: stressMedium, color: "#f59e0b" },
-      { name: "High", value: stressHigh, color: "#ef4444" },
-    ]
+
+
+   const stressPieData = [
+  { name: "Low", value: stressLow, color: "#22c55e" },
+  { name: "Medium", value: stressMedium, color: "#facc15" },
+  { name: "High", value: stressHigh, color: "#ef4444" },
+]
+
+    const nonZeroStress = stressPieData.filter(s => s.value > 0)
+    const isSingleStress = nonZeroStress.length === 1
+
+    const totalStressSessions =
+      stressLow + stressMedium + stressHigh
+
 
     const studyEfficiency =
       filteredSessions.length > 0
@@ -376,8 +334,9 @@ export function StudySessionDashboard() {
 
     const focusTimeData = filteredSessions.map((s, idx) => ({
       session: `Session ${idx + 1}`, // Using a simple session label
-      studyTime: s.recommended_study_duration,
-      breakTime: s.recommended_break_duration,
+      studyTime: s.study_duration ?? s.recommended_study_duration ?? 0,
+      breakTime: s.break_duration ?? s.recommended_break_duration ?? 0,
+
       efficiency:
         s.recommended_study_duration + s.recommended_break_duration > 0
           ? Math.round(
@@ -406,8 +365,13 @@ export function StudySessionDashboard() {
       studyEfficiency,
       productivityScore,
       focusTimeData,
+      stressTrendSummary,
+      isSingleStress,
+      singleStressLabel: isSingleStress ? nonZeroStress[0].name : null,
+
     }
   }, [filteredSessions]) // Depend on filteredSessions
+
 
   // Updated recommendations generation to use new attribute names and data
   const getStudentRecommendations = () => {
@@ -424,6 +388,25 @@ export function StudySessionDashboard() {
 
     const totalSessions = filteredSessions.length
     if (totalSessions === 0) return recs // Return early if no sessions
+
+    if (stressTrendSummary === "Increasing") {
+      recs.unshift({
+        type: "warning",
+        priority: "high",
+        category: "Agent Intelligence",
+        title: "Stress Trend Increasing",
+        description:
+          "The AI agent has detected a rising stress pattern across recent study sessions using memory-based analysis.",
+        impact: 90,
+        actionSteps: [
+          "Use shorter study sessions (20–25 min)",
+          "Increase break duration",
+          "Avoid heavy subjects temporarily",
+          "Prefer morning study sessions",
+        ],
+        metric: "Agent memory based",
+      })
+   }
 
     // Stress-based recommendations
     if (analytics.stressPercentages.high > 40) {
@@ -496,26 +479,33 @@ export function StudySessionDashboard() {
     })
 
     // Subject-specific recommendations
-    Object.entries(analytics.subjectPerformance).forEach(([subject, performance]) => {
-      if (performance.weak > performance.strong) {
-        const weakPercentage = Math.round((performance.weak / (performance.weak + performance.strong)) * 100)
-        recs.push({
-          type: "info",
-          priority: weakPercentage > 60 ? "high" : "medium",
-          category: "Subject Mastery",
-          title: `${subject} Requires Attention`,
-          description: `${weakPercentage}% of ${subject} sessions show weaker performance. Strategic intervention can improve outcomes.`,
-          impact: 68,
-          actionSteps: [
-            "Break down complex topics into smaller, manageable chunks.",
-            "Use active recall and spaced repetition techniques.",
-            "Create summary notes and flashcards for key concepts.",
-            "Consider study groups or tutoring for difficult areas.",
-          ],
-          metric: `${weakPercentage}% Weak Performance`,
-        })
-      }
-    })
+    // ✅ Subject-specific recommendations (AGENT-BASED)
+    Object.entries(analytics.subjectPerformance).forEach(
+      ([subject, performance]) => {
+        const focusRate =
+          performance.total > 0
+            ? Math.round((performance.focused / performance.total) * 100)
+            : 0
+
+        if (focusRate < 50) {
+          recs.push({
+            type: "info",
+            priority: focusRate < 35 ? "high" : "medium",
+            category: "Subject Mastery",
+            title: `${subject} Needs Better Focus`,
+            description: `Only ${focusRate}% of your ${subject} sessions were in a focused state. The AI agent suggests improving study strategy for this subject.`,
+            impact: 70,
+            actionSteps: [
+              "Study this subject during your lowest-stress time of day.",
+              "Use shorter study sessions (20–30 minutes).",
+              "Revise using active recall instead of rereading.",
+              "Avoid this subject when stress trend is increasing.",
+            ],
+            metric: `${focusRate}% Focused Sessions`,
+          })
+        }}
+       )
+
 
     // Break optimization
     if (analytics.avgBreakTime < 10) {
@@ -785,6 +775,29 @@ export function StudySessionDashboard() {
     typeof window !== "undefined"
     ? JSON.parse(localStorage.getItem("latestAgentResult") || "null")
     : null
+    const renderStressLabel = ({ cx, cy, midAngle, outerRadius, name, value }: any) => {
+      if (value === 0) return null
+
+      const RADIAN = Math.PI / 180
+      const radius = outerRadius + 25
+      const x = cx + radius * Math.cos(-midAngle * RADIAN)
+      const y = cy + radius * Math.sin(-midAngle * RADIAN)
+
+      return (
+        <text
+          x={x}
+          y={y}
+          fill={theme === "dark" ? "#e5e7eb" : "#111827"}
+          textAnchor={x > cx ? "start" : "end"}
+          dominantBaseline="central"
+          fontSize={12}
+        >
+          {`${name}: ${value}`}
+        </text>
+      )
+    }
+
+
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${theme === "dark" ? "bg-slate-950" : "bg-gray-50"}`}>
@@ -919,7 +932,7 @@ export function StudySessionDashboard() {
                     className={`text-xs mt-2 flex items-center gap-1 ${theme === "dark" ? "text-slate-400" : "text-gray-600"}`}
                   >
                     <TrendingUp className="h-3 w-3" />
-                    {analytics.avgHeartRate} bpm average
+                    {Math.round(analytics.avgHeartRate)} bpm average
                   </p>
                 </CardContent>
               </Card>
@@ -942,7 +955,7 @@ export function StudySessionDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className={`text-3xl font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
-                    {analytics.avgStudyTime} mins
+                    {Math.round(analytics.avgStudyTime)} mins
                   </div>
                   <p
                     className={`text-xs mt-2 flex items-center gap-1 ${theme === "dark" ? "text-slate-400" : "text-gray-600"}`}
@@ -971,7 +984,7 @@ export function StudySessionDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className={`text-3xl font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
-                    {analytics.avgBreakTime} mins
+                    {Math.round(analytics.avgBreakTime)} mins
                   </div>
                   <p
                     className={`text-xs mt-2 flex items-center gap-1 ${theme === "dark" ? "text-slate-400" : "text-gray-600"}`}
@@ -1094,10 +1107,10 @@ export function StudySessionDashboard() {
                           </td>
                           <td className="px-4 py-3 text-sm whitespace-nowrap">{session.detected_study_state}</td>
                           <td className="px-4 py-3 text-sm whitespace-nowrap">
-                            {session.recommended_study_duration} min
+                            {session.study_duration ?? session.recommended_study_duration ?? "—"} min
                           </td>
                           <td className="px-4 py-3 text-sm whitespace-nowrap">
-                            {session.recommended_break_duration} min
+                            {session.break_duration ?? session.recommended_break_duration ?? "—"} min
                           </td>
                           <td className="px-4 py-3 text-sm whitespace-nowrap">
                             <span
@@ -1161,6 +1174,13 @@ export function StudySessionDashboard() {
                 Deep insights into study patterns and performance metrics
               </p>
             </div>
+            <Card>
+              <CardContent>
+                <h3 className="font-semibold">Overall Stress Trend (AI Memory)</h3>
+                <p className="text-lg">{analytics.stressTrendSummary}</p>
+              </CardContent>
+            </Card>
+
 
             <div className="grid gap-6 md:grid-cols-4">
               <Card
@@ -1224,7 +1244,7 @@ export function StudySessionDashboard() {
                     <TrendingUp className={`h-4 w-4 ${theme === "dark" ? "text-green-400" : "text-green-600"}`} />
                   </div>
                   <div className={`text-3xl font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
-                    {analytics.avgHeartRate}
+                    {Math.round(analytics.avgHeartRate)}
                   </div>
                   <p className={`text-sm mt-1 ${theme === "dark" ? "text-slate-400" : "text-gray-600"}`}>
                     Avg Heart Rate (bpm)
@@ -1247,7 +1267,7 @@ export function StudySessionDashboard() {
                     <TrendingDown className={`h-4 w-4 ${theme === "dark" ? "text-red-400" : "text-red-600"}`} />
                   </div>
                   <div className={`text-3xl font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
-                    {analytics.avgGSR}
+                    {Math.round(analytics.avgGSR)}
                   </div>
                   <p className={`text-sm mt-1 ${theme === "dark" ? "text-slate-400" : "text-gray-600"}`}>
                     Avg GSR Value
@@ -1289,6 +1309,15 @@ export function StudySessionDashboard() {
                     <XAxis dataKey="session" stroke={theme === "dark" ? "#94a3b8" : "#6b7280"} />
                     <YAxis stroke={theme === "dark" ? "#94a3b8" : "#6b7280"} />
                     <Tooltip
+                      formatter={(value: number, name: string) => {
+                        if (name === "Heart Rate (bpm)") {
+                          return [`${Math.round(value)} bpm`, name]
+                        }
+                        if (name === "GSR Value") {
+                          return [`${value.toFixed(1)}`, name]
+                        }
+                        return [value, name]
+                      }}
                       contentStyle={{
                         backgroundColor: theme === "dark" ? "#1e293b" : "#ffffff",
                         border: `1px solid ${theme === "dark" ? "#475569" : "#e5e7eb"}`,
@@ -1296,6 +1325,7 @@ export function StudySessionDashboard() {
                         color: theme === "dark" ? "#fff" : "#000",
                       }}
                     />
+
                     <Legend />
                     <Area
                       type="monotone"
@@ -1338,21 +1368,50 @@ export function StudySessionDashboard() {
                   <ResponsiveContainer width="100%" height={250}>
                     {/* Updated chart data preparation to use new attribute names */}
                     <BarChart data={analytics.timeOfDayData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={theme === "dark" ? "#334155" : "#e5e7eb"} />
-                      <XAxis dataKey="time" stroke={theme === "dark" ? "#94a3b8" : "#6b7280"} />
-                      <YAxis stroke={theme === "dark" ? "#94a3b8" : "#6b7280"} />
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="rgba(148,163,184,0.15)"
+                      />
+                      <XAxis
+                        dataKey="time"
+                        stroke="#94a3b8"
+                        fontSize={12}
+                      />
+                      <YAxis
+                        stroke="#94a3b8"
+                        fontSize={12}
+                        allowDecimals={false}
+                      />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: theme === "dark" ? "#1e293b" : "#ffffff",
-                          border: `1px solid ${theme === "dark" ? "#475569" : "#e5e7eb"}`,
+                          backgroundColor: "#020617",
+                          border: "1px solid rgba(148,163,184,0.2)",
                           borderRadius: "8px",
-                          color: theme === "dark" ? "#fff" : "#000",
+                          color: "#fff",
                         }}
                       />
                       <Legend />
-                      <Bar dataKey="lowStress" stackId="a" fill="#10b981" name="Low Stress" />
-                      <Bar dataKey="mediumStress" stackId="a" fill="#f59e0b" name="Medium Stress" />
-                      <Bar dataKey="highStress" stackId="a" fill="#ef4444" name="High Stress" />
+
+                      <Bar
+                        dataKey="lowStress"
+                        stackId="a"
+                        fill="#10b981"
+                        radius={[4, 4, 0, 0]}
+                        name="Low Stress"
+                      />
+                      <Bar
+                        dataKey="mediumStress"
+                        stackId="a"
+                        fill="#f59e0b"
+                        name="Medium Stress"
+                      />
+                      <Bar
+                        dataKey="highStress"
+                        stackId="a"
+                        fill="#ef4444"
+                        radius={[0, 0, 4, 4]}
+                        name="High Stress"
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -1380,24 +1439,50 @@ export function StudySessionDashboard() {
                         data={analytics.stressPieData}
                         cx="50%"
                         cy="50%"
-                        labelLine={false}
-                        label={(entry) => `${entry.name} (${entry.value})`}
-                        outerRadius={80}
-                        fill="#8884d8"
+                        innerRadius={55}
+                        outerRadius={85}
                         dataKey="value"
+                        label={analytics.isSingleStress ? false : renderStressLabel}
+                        labelLine={false}
                       >
+
+                        {analytics.isSingleStress && (
+                          <text
+                            x="50%"
+                            y="50%"
+                            textAnchor="middle"
+                            dominantBaseline="middle"
+                            fill={
+                              analytics.singleStressLabel === "High"
+                                ? "#ef4444"
+                                : analytics.singleStressLabel === "Medium"
+                                ? "#f59e0b"
+                                : "#10b981"
+                            }
+                            fontSize={18}
+                            fontWeight={700}
+                          >
+                            {analytics.singleStressLabel}
+                          </text>
+                        )}
+
+
+
                         {analytics.stressPieData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
-                      <Tooltip
+                     <Tooltip
+                        formatter={(value: number, name: string) => [
+                          `${value} sessions`,
+                          name,
+                        ]}
                         contentStyle={{
                           backgroundColor: theme === "dark" ? "#1e293b" : "#ffffff",
-                          border: `1px solid ${theme === "dark" ? "#475569" : "#e5e7eb"}`,
                           borderRadius: "8px",
-                          color: theme === "dark" ? "#fff" : "#000",
                         }}
                       />
+
                     </RechartsPie>
                   </ResponsiveContainer>
                 </CardContent>
@@ -1463,13 +1548,16 @@ export function StudySessionDashboard() {
                     <XAxis dataKey="session" stroke={theme === "dark" ? "#94a3b8" : "#6b7280"} />
                     <YAxis stroke={theme === "dark" ? "#94a3b8" : "#6b7280"} />
                     <Tooltip
+                      formatter={(value: number, name: string) => [
+                        `${Math.round(value)} min`,
+                        name,
+                      ]}
                       contentStyle={{
                         backgroundColor: theme === "dark" ? "#1e293b" : "#ffffff",
-                        border: `1px solid ${theme === "dark" ? "#475569" : "#e5e7eb"}`,
                         borderRadius: "8px",
-                        color: theme === "dark" ? "#fff" : "#000",
                       }}
                     />
+
                     <Legend />
                     <Bar dataKey="studyTime" fill="#3b82f6" name="Study Time (min)" />
                     <Bar dataKey="breakTime" fill="#10b981" name="Break Time (min)" />
