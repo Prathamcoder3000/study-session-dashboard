@@ -1,284 +1,277 @@
-# MongoDB Integration Architecture
+# MongoDB Integration Architecture ------------->>>>>
 
-## System Architecture
+## System Architecture ->
 
-```
 ┌─────────────────────────────────────────────────────────────┐
-│                    FRONTEND (Next.js)                        │
-│  ┌─────────────────────────────────────────────────────────┐ │
-│  │                   Pages                                  │ │
-│  │  • / (Home/Landing)                                      │ │
-│  │  • /login (Login/Register)                               │ │
-│  │  • /dashboard (Study Dashboard)                          │ │
-│  └─────────────────────────────────────────────────────────┘ │
-│  ┌─────────────────────────────────────────────────────────┐ │
-│  │                  Components                              │ │
-│  │  • LoginPageWithDB (Login/Register UI)                   │ │
-│  │  • StudySessionDashboardWithDB (Dashboard UI)            │ │
-│  └─────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-                            ↓ HTTP/REST
-┌─────────────────────────────────────────────────────────────┐
-│                   BACKEND (Next.js API)                      │
-│  ┌──────────────────────────────────────────────────────┬──┐ │
-│  │          Authentication Routes                       │  │ │
-│  │  POST /api/auth/register (Create User)              │  │ │
-│  │  POST /api/auth/login (Verify User)                 │  │ │
-│  └──────────────────────────────────────────────────────┴──┘ │
-│  ┌──────────────────────────────────────────────────────┬──┐ │
-│  │       Study Session Routes (CRUD)                   │  │ │
-│  │  GET  /api/study-sessions?userId=X (List)           │  │ │
-│  │  POST /api/study-sessions (Create)                  │  │ │
-│  │  GET  /api/study-sessions/[id] (Read)               │  │ │
-│  │  PUT  /api/study-sessions/[id] (Update)             │  │ │
-│  │  DELETE /api/study-sessions/[id] (Delete)           │  │ │
-│  └──────────────────────────────────────────────────────┴──┘ │
+│                    USER LAYER                               │
+│  Student using web application                              │
+│  • Study setup                                              │
+│  • Dashboard interaction                                   │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│              Data Access Layer (lib/db)                      │
-│  ┌─────────────────────────────────────────────────────────┐ │
-│  │           connect.ts (MongoDB Connection Manager)      │ │
-│  │  • Manages connection pooling                          │ │
-│  │  • Caches connection                                   │ │
-│  │  • Handles connection reuse                            │ │
-│  └─────────────────────────────────────────────────────────┘ │
+│              PRESENTATION LAYER (Next.js)                   │
+│  Pages                                                      │
+│  • /login (Auth)                                            │
+│  • /dashboard (Study Dashboard)                             │
+│                                                             │
+│  Components                                                 │
+│  • LoginPageWithDB                                          │
+│  • StudySessionDashboardWithDB                              │
+│  • SensorDataSimulator                                      │
+│                                                             │
+│  Responsibilities                                           │
+│  • User input                                               │
+│  • Simulated sensor data (HR, GSR)                          │
+│  • Display AI recommendations                               │
 └─────────────────────────────────────────────────────────────┘
-                            ↓
+                            ↓ REST / HTTP
 ┌─────────────────────────────────────────────────────────────┐
-│           Database Models Layer (lib/models)                │
-│  ┌──────────────────────┐  ┌────────────────────────────┐   │
-│  │   User.ts (Schema)   │  │ StudySession.ts (Schema)   │   │
-│  │                      │  │                            │   │
-│  │ • _id                │  │ • _id                      │   │
-│  │ • email (unique)     │  │ • userId (ref: User)       │   │
-│  │ • password (hashed)  │  │ • subject                  │   │
-│  │ • name               │  │ • topic                    │   │
-│  │ • createdAt          │  │ • duration (minutes)       │   │
-│  │ • updatedAt          │  │ • difficulty               │   │
-│  │                      │  │ • notes                    │   │
-│  │                      │  │ • effectiveness (1-10)     │   │
-│  │                      │  │ • status                   │   │
-│  │                      │  │ • date                     │   │
-│  │                      │  │ • createdAt                │   │
-│  │                      │  │ • updatedAt                │   │
-│  └──────────────────────┘  └────────────────────────────┘   │
+│              APPLICATION LAYER (FastAPI)                    │
+│                                                             │
+│  Authentication APIs                                        │
+│  • POST /auth/register                                      │
+│  • POST /auth/login                                         │
+│                                                             │
+│  Study & Sensor APIs                                        │
+│  • POST /sensor-data                                       │
+│  • POST /run-agent/{userId}                                 │
+│  • GET  /schedule/{userId}                                  │
+│                                                             │
+│  Responsibilities                                           │
+│  • Validation                                               │
+│  • Orchestration                                            │
+│  • Agent triggering                                         │
 └─────────────────────────────────────────────────────────────┘
-                            ↓ Mongoose ODM
+                            ↓ Decision Request
 ┌─────────────────────────────────────────────────────────────┐
-│                  MongoDB Database                            │
-│  ┌──────────────────────┐  ┌────────────────────────────┐   │
-│  │  Users Collection    │  │ StudySessions Collection   │   │
-│  │  ├─ user@x.com       │  │ ├─ {userId, subject,...}   │   │
-│  │  ├─ user2@y.com      │  │ ├─ {userId, subject,...}   │   │
-│  │  └─ ...              │  │ └─ ...                     │   │
-│  └──────────────────────┘  └────────────────────────────┘   │
+│        INTELLIGENCE LAYER (Agentic AI Engine)               │
+│                                                             │
+│  Level-2 Model-Based Agentic AI (Rule-Based)                │
+│  • No Machine Learning Used                                 │
+│                                                             │
+│  Internal Modules                                           │
+│  • Perception (Sensor Observation)                          │
+│  • Internal State Model                                     │
+│    - Focused                                                │
+│    - Stressed                                               │
+│    - Fatigued                                               │
+│  • Rule Evaluation Engine                                   │
+│  • Decision Generator                                       │
+│                                                             │
+│  Outputs                                                    │
+│  • Study Duration                                           │
+│  • Break Duration                                           │
+│  • Priority Level                                           │
 └─────────────────────────────────────────────────────────────┘
-```
+                            ↓ Store / Fetch
+┌─────────────────────────────────────────────────────────────┐
+│                 DATA LAYER (MongoDB Atlas)                  │
+│                                                             │
+│  Collections                                                │
+│  • Users                                                    │
+│  • StudySessions                                            │
+│  • SensorReadings                                           │
+│  • AgentDecisions                                           │
+│                                                             │
+│  Stored Data                                                │
+│  • User profiles                                            │
+│  • Subject data                                             │
+│  • Sensor values                                            │
+│  • AI decisions                                             │
+│  • Generated schedules                                      │
+└─────────────────────────────────────────────────────────────┘
 
----
 
-## Authentication Flow
+-----------------------------------------------------------------------------------
 
-```
-User Visits App
-    ↓
-└─→ Logged In?
-    ├─ YES → Go to Dashboard
-    └─ NO  → Go to Login Page
-              ↓
-              User Enters Credentials
-              ↓
-              Register or Login?
-              ├─ REGISTER
-              │   ├─ POST /api/auth/register
-              │   ├─ Validate Input
-              │   ├─ Hash Password (SHA256)
-              │   ├─ Create User in MongoDB
-              │   ├─ Save userId to localStorage
-              │   └─ Go to Dashboard
-              │
-              └─ LOGIN
-                  ├─ POST /api/auth/login
-                  ├─ Find User in MongoDB
-                  ├─ Verify Password
-                  ├─ Save userId to localStorage
-                  └─ Go to Dashboard
-```
+## Authentication Flow ->
 
----
+          User Opens App
+            ↓
+          Check Login Status
+            ├─ Logged In → Dashboard
+            └─ Not Logged In → Login Page
+                                ↓
+                          Enter Credentials
+                                ↓
+                  ┌─────────────┴─────────────┐
+                  │                           │
+              REGISTER                     LOGIN
+                  │                           │
+          POST /auth/register         POST /auth/login
+                  │                           │
+          Validate Input              Validate Credentials
+          Hash Password               Verify Password
+          Store User in MongoDB       Fetch User
+                  │                           │
+          Return userId               Return userId
+                  ↓                           ↓
+          Save to localStorage → Redirect to Dashboard
+
+
+-----------------------------------------------------------------------------------
+
 
 ## Study Session CRUD Flow
 
-```
 Dashboard Opens
     ↓
 Fetch Sessions
-    ├─ GET /api/study-sessions?userId=user_id
-    ├─ Query MongoDB
-    └─ Display in Table
+    ├─ GET /schedule/{userId}
+    ├─ Query MongoDB (StudySessions + AgentDecisions)
+    └─ Display in Dashboard Table & Charts
 
 User Actions:
     ├─ CREATE
-    │   ├─ Fill Form
-    │   ├─ POST /api/study-sessions
-    │   ├─ Save to MongoDB
-    │   └─ Refresh List
+    │   ├─ Fill Study Setup Form
+    │   ├─ POST /sensor-data
+    │   ├─ POST /run-agent/{userId}
+    │   ├─ Agent generates plan
+    │   ├─ Save StudySession + AgentDecision in MongoDB
+    │   └─ Refresh Dashboard
     │
     ├─ READ
-    │   ├─ GET /api/study-sessions/[id]
-    │   ├─ Query MongoDB
-    │   └─ Show Details
+    │   ├─ GET /schedule/{userId}
+    │   ├─ Fetch study + AI recommendation
+    │   └─ Show details
     │
     ├─ UPDATE
-    │   ├─ Click Edit/Complete
-    │   ├─ PUT /api/study-sessions/[id]
-    │   ├─ Update in MongoDB
-    │   └─ Refresh List
+    │   ├─ Modify subject/status
+    │   ├─ PUT /study-session/{id}
+    │   ├─ Update MongoDB
+    │   └─ Refresh dashboard
     │
     └─ DELETE
-        ├─ Click Delete
-        ├─ DELETE /api/study-sessions/[id]
+        ├─ DELETE /study-session/{id}
         ├─ Remove from MongoDB
-        └─ Refresh List
-```
+        └─ Refresh dashboard
 
----
+
+-----------------------------------------------------------------------------------
+
 
 ## Data Flow: User Registration
 
-```
-User Form
-  ↓
+`User Registration Form
+   ↓
 Validate Input (Email, Password, Name)
-  ↓
-POST /api/auth/register
-  ├─ Connect to MongoDB
-  ├─ Check if Email Exists
-  │  ├─ YES → Return Error
-  │  └─ NO → Continue
-  ├─ Hash Password
-  ├─ Create User Document
-  ├─ Save to MongoDB
-  ├─ Return User Data
-  ↓
-Store userId in localStorage
-  ↓
+   ↓
+POST /auth/register
+   ├─ Connect to MongoDB
+   ├─ Check Email Exists
+   │   ├─ YES → Error response
+   │   └─ NO → Continue
+   ├─ Hash Password (SHA-256 / bcrypt)
+   ├─ Create User Document
+   ├─ Save in MongoDB
+   ├─ Return userId
+   ↓
+Store userId (localStorage / session)
+   ↓
 Redirect to Dashboard
-  ↓
-Dashboard Fetches Sessions
-  ├─ GET /api/study-sessions?userId=user_id
-  └─ Display Empty (First Time)
-```
+   ↓
+Dashboard Requests Schedule
+   ├─ GET /schedule/{userId}
+   └─ Empty state shown (first login)
 
----
+
+-----------------------------------------------------------------------------------
+
 
 ## Data Flow: Create Study Session
 
-```
-User Fills Form
-  ├─ Subject: "Mathematics"
-  ├─ Topic: "Algebra"
-  ├─ Duration: 60 minutes
-  ├─ Difficulty: "Medium"
-  └─ Notes: "Focus on equations"
-  ↓
-Validate Form
-  ├─ Subject required
-  ├─ Topic required
-  ├─ Duration > 0
-  └─ ✓ All Valid
-  ↓
-POST /api/study-sessions
-  ├─ Connect to MongoDB
-  ├─ Create Document
-  │  ├─ userId: (from localStorage)
-  │  ├─ subject: "Mathematics"
-  │  ├─ topic: "Algebra"
-  │  ├─ duration: 60
-  │  ├─ difficulty: "Medium"
-  │  ├─ notes: "Focus on equations"
-  │  ├─ effectiveness: 5 (default)
-  │  ├─ status: "In Progress"
-  │  ├─ date: (now)
-  │  ├─ createdAt: (now)
-  │  └─ updatedAt: (now)
-  ├─ Save to StudySessions Collection
-  └─ Return Session Data
-  ↓
-Add to Sessions List
-  ↓
-Update Dashboard Statistics
-  ├─ Total Sessions: +1
-  ├─ Total Hours: +1
-  └─ Chart Updated
-  ↓
-Clear Form & Close Modal
-```
+User Fills Study Setup
+   ├─ Subject: Mathematics
+   ├─ Topic: Algebra
+   ├─ Subject Strength: Weak
+   ├─ Simulated Heart Rate
+   └─ Simulated GSR
+   ↓
+POST /sensor-data
+   ├─ Validate sensor values
+   └─ Store temporary readings
+   ↓
+POST /run-agent/{userId}
+   ├─ Agent observes sensor + subject data
+   ├─ Internal State Evaluation
+   │   ├─ Focused
+   │   ├─ Stressed
+   │   └─ Fatigued
+   ├─ Rule-Based Decision
+   │   ├─ Study Duration
+   │   ├─ Break Duration
+   │   └─ Priority Level
+   ↓
+Store in MongoDB
+   ├─ StudySessions collection
+   └─ AgentDecisions collection
+   ↓
+GET /schedule/{userId}
+   ↓
+Update Dashboard
+   ├─ Study Plan
+   ├─ Break Plan
+   └─ Analytics updated
 
----
+
+-----------------------------------------------------------------------------------
 
 ## File Dependencies
 
-```
-pages/
-├── login/page.tsx
-│   └── imports LoginPageWithDB
-│       └── imports from lib/models
-│       └── fetch calls to /api/auth/*
+frontend/
+├── app/
+│   ├── login/page.tsx
+│   ├── dashboard/page.tsx
+│   └── study-setup/page.tsx
 │
-├── dashboard/page.tsx
-│   └── imports StudySessionDashboardWithDB
-│       └── imports from lib/models
-│       └── fetch calls to /api/study-sessions/*
+├── components/
+│   ├── LoginForm.tsx
+│   ├── StudySetupForm.tsx
+│   ├── SensorSimulator.tsx
+│   └── RecommendationDashboard.tsx
 │
-└── study-setup/page.tsx
-    └── redirects to /dashboard
+└── services/
+    └── api.ts (FastAPI calls)
 
-api/
-├── auth/
-│   ├── register.ts
-│   │   ├── imports connectDB
-│   │   └── imports User model
+backend/
+├── app/
+│   ├── main.py
+│   ├── routes/
+│   │   ├── auth.py
+│   │   ├── sensor.py
+│   │   ├── agent.py
+│   │   └── schedule.py
 │   │
-│   └── login.ts
-│       ├── imports connectDB
-│       └── imports User model
-│
-└── study-sessions/
-    ├── route.ts
-    │   ├── imports connectDB
-    │   └── imports StudySession model
-    │
-    └── [id]/route.ts
-        ├── imports connectDB
-        └── imports StudySession model
+│   ├── agent/
+│   │   ├── perception.py
+│   │   ├── state_model.py
+│   │   ├── rules.py
+│   │   └── decision_engine.py
+│   │
+│   ├── models/
+│   │   ├── user.py
+│   │   ├── study_session.py
+│   │   └── agent_decision.py
+│   │
+│   └── db/
+│       └── connect.py
 
-lib/
-├── db/
-│   └── connect.ts
-│       └── imports mongoose
-│
-└── models/
-    ├── User.ts
-    │   └── imports mongoose
-    │
-    └── StudySession.ts
-        └── imports mongoose
-```
 
----
+------------------------------------------------------------------------------------
+
 
 ## Environment Configuration
 
 ```
-.env.local
-├── MONGODB_URI
-│   └─ mongodb+srv://user:pass@cluster.mongodb.net/db_name
-│
-└── NODE_ENV
-    └─ development (or production)
-```
+.env
+├── MONGODB_URI=mongodb+srv://user:pass@cluster/db
+├── SECRET_KEY=your_secret_key
+├── ENV=development
+└── PORT=8000
+
+
+-----------------------------------------------------------------------------------
 
 ---
 
@@ -336,40 +329,25 @@ Response (201):
 }
 ```
 
----
+-----------------------------------------------------------------------------------
 
 ## Technology Stack
 
-```
-Frontend Layer
-├─ React 19.2.0
-├─ Next.js 16.0.10
+Frontend
+├─ Next.js (React)
 ├─ TypeScript
 ├─ Tailwind CSS
-├─ Recharts (charts)
-└─ Radix UI (components)
+└─ Recharts
 
-Backend Layer
-├─ Next.js API Routes
-├─ Mongoose 9.1.0
-├─ MongoDB Driver 7.0.0
-└─ Node.js (runtime)
+Backend
+├─ Python
+├─ FastAPI
+├─ Uvicorn
+└─ Rule-Based Agentic AI
 
 Database
 ├─ MongoDB
-├─ MongoDB Atlas (cloud)
-└─ Collections (Users, StudySessions)
-```
+└─ MongoDB Atlas
+
 
 ---
-
-## Summary
-
-This architecture provides:
-- ✅ Clean separation of concerns
-- ✅ Scalable MongoDB integration
-- ✅ RESTful API endpoints
-- ✅ Type-safe TypeScript models
-- ✅ Real-time data synchronization
-- ✅ Secure authentication flow
-- ✅ Comprehensive error handling

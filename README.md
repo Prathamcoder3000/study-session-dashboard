@@ -1,10 +1,32 @@
- # 📘 Sensor-Based Smart Study Schedule Planning System
+
+# 📘 Sensor-Based Smart Study Schedule Planning System
 
 ## 📌 Project Overview
-The **Sensor-Based Smart Study Schedule Planning System** is an intelligent web-based application that generates **personalized study schedules** by analyzing a student’s **stress level, focus, and fatigue** using simulated physiological sensor data.
+The **Sensor-Based Smart Study Schedule Planning System** is an intelligent web-based application that generates **personalized study schedules** by analyzing a student’s **stress level, focus, and fatigue** using **simulated physiological sensor data**.
 
-The system uses a **Rule-Based Agentic AI** approach (not Machine Learning), making the decision process **transparent, explainable, and scalable** for future real-hardware integration.
+The system uses a **Rule-Based Agentic AI approach (Level-2: Model-Based Agent)** instead of Machine Learning, ensuring that decisions are **transparent, explainable, and easy to upgrade** when real hardware is introduced.
 
+------------------------------------------------------------------------------------------
+
+## 🎯 Problem Statement
+Students often follow fixed study schedules without considering:
+- Mental stress
+- Fatigue
+- Focus capacity
+
+This leads to poor productivity and burnout.  
+This system solves the problem by **adapting study plans dynamically** based on physiological conditions.
+
+## 🧠 AI Approach Used
+- **Agentic AI (Rule-Based)**
+- **Agent Level**: **Level-2 – Model-Based Agent**
+- No Machine Learning used
+
+The agent:
+- Observes sensor values
+- Maintains internal state
+- Applies predefined rules
+- Takes autonomous decisions
 
 ------------------------------------------------------------------------------------------
 
@@ -18,20 +40,18 @@ The idea for this project originated from the observation that students often st
 
 This leads to low productivity and poor mental well-being.
 
-### AI Tools Usage
-AI tools were used during ideation and research to:
-- Analyze common student productivity and burnout problems
-- Understand physiological indicators such as:
+AI tools were used for:
+- Identifying student productivity issues
+- Understanding physiological indicators:
   - Heart Rate (BPM)
   - GSR (Galvanic Skin Response)
-- Select the most suitable AI approach  
-  → **Agentic AI** was chosen instead of Machine Learning
+- Selecting Agentic AI over ML
 
-### Outcomes from AI-Assisted Research
-- Problem validation  
-- Rule formulation for decision-making  
-- Intelligent agent design  
-- System architecture planning  
+### Outcomes
+- Problem validation
+- Rule formulation
+- Agent design
+- System architecture planning
 
 
 ------------------------------------------------------------------------------------------
@@ -40,41 +60,41 @@ AI tools were used during ideation and research to:
 ## 2️⃣ Business Model (Conceptual)
 
 ### 🎯 Target Users
-- Students  
-- Self-learners  
-- Educational platforms  
+- Students
+- Self-learners
+- Educational platforms
 
 ### 💡 Value Proposition
-- Smart and personalized study planning  
-- Stress-aware study recommendations  
-- Improved productivity and mental well-being  
+- Stress-aware study planning
+- Personalized recommendations
+- Improved productivity and mental well-being
 
 ### 🚀 Future Scope
-- Integration with wearable devices  
-- Premium analytics for institutions  
-- Long-term personalized learning insights  
+- Wearable device integration
+- Institutional analytics
+- Long-term learning insights 
 
 
 ------------------------------------------------------------------------------------------
 
 
-## 3️⃣ System Architecture Diagram (With Hardware + AI)
+## 3️⃣ System Architecture
 
-### 🧩 System Components
-- **Frontend**: Web-based user interface (Next.js)  
-- **Backend**: FastAPI server  
-- **Agentic AI Engine**: Rule-based decision-making system  
-- **Database**: MongoDB Atlas  
-- **Hardware (Simulated)**: Heart Rate & GSR sensors  
+### 🧩 Components
+- **Frontend**: Next.js (React)
+- **Backend**: FastAPI (Python)
+- **Agentic AI Engine**: Rule-Based Decision System
+- **Database**: MongoDB Atlas
+- **Sensors**: Simulated Heart Rate & GSR
 
-### 🔄 Architecture Flow
+### 🔄 Data Flow
                User
                 ↓
         Frontend (Next.js)
                 ↓
         Backend APIs (FastAPI)
                 ↓
-        Agentic AI (Rule-Based)
+        Agentic AI Engine
                 ↓
         MongoDB Database
                 ↓
@@ -82,7 +102,9 @@ AI tools were used during ideation and research to:
 
 
 ### 📷 Architecture Diagram
-![alt text](image.png)
+![alt text](image-1.png)
+![alt text](image.png) - PROPER
+
 
 > Simulated sensors can be replaced by real hardware in the future without changing backend logic.
 
@@ -165,8 +187,6 @@ This project uses a **Rule-Based Agentic AI**.
 - Stores decisions in the database  
 - Sends results to the frontend dashboard  
 
-⚠️ still in progress
-
 
 ------------------------------------------------------------------------------------------
 
@@ -232,7 +252,7 @@ This project uses a **Rule-Based Agentic AI**.
 
     Uvicorn
 
-    Rule-Based Agentic AI
+    MODEL BASED Agentic AI
 
 
 ------------------------------------------------------------------------------------------
