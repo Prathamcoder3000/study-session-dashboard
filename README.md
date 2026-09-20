@@ -208,6 +208,10 @@ flowchart TD
 ### 🎥 Live Demo Video
 - **Local File**: [`screen-recording-2026-01-10-201100_wAztw0Cw.mp4`](screen-recording-2026-01-10-201100_wAztw0Cw.mp4)
 - **GitHub Hosted Stream**: [Watch Full Platform Demo Video on GitHub Assets](https://github.com/user-attachments/assets/4d752ca9-3ca6-4b43-b67e-c6fca618bd4e)
+- **Google Drive Video (HD Mirror)**: [Watch Full Video Demo on Google Drive ↗](https://drive.google.com/file/d/1-fjtxH8hDa0L-QGlDf35PF2yXRHTfPDc/view?usp=drive_link)
+
+[![Watch Demo Video Preview](docs/screenshots/dashboard-live-telemetry.png)](https://drive.google.com/file/d/1-fjtxH8hDa0L-QGlDf35PF2yXRHTfPDc/view?usp=drive_link)
+<p align="center"><sub>▶️ <em>Click the preview image above to watch the complete live demo recording on Google Drive.</em></sub></p>
 
 ---
 
