@@ -117,6 +117,8 @@ const getRecommendations = () => {
 
 export function StudySessionDashboard() {
   const [currentUser, setCurrentUser] = useState<string>("")
+  const [heartRate, setHeartRate] = useState<number | null>(null);
+  const [dynamicSchedule, setDynamicSchedule] = useState<any>(null);
   const [userName, setUserName] = useState<string>("")
   const [activeTab, setActiveTab] = useState<"home" | "analytics" | "recommendations">("home")
   const [theme, setTheme] = useState<"light" | "dark">("dark")
@@ -157,6 +159,35 @@ export function StudySessionDashboard() {
       setScheduledReviews(JSON.parse(savedReviews))
     }
   }, [])
+
+ 
+        useEffect(() => {
+  const fetchLiveData = async () => {
+    try {
+      // 1️⃣ Get latest heart rate
+      const hrRes = await fetch("http://172.20.10.9:8000/latest-heart-rate/student1");
+      const hrData = await hrRes.json();
+      setHeartRate(hrData.heart_rate);
+
+      // 2️⃣ Get dynamic schedule based on heart rate
+      const schedRes = await fetch("http://172.20.10.9:8000/dynamic-schedule/student1");
+      const schedData = await schedRes.json();
+      setDynamicSchedule(schedData);
+
+    } catch (err) {
+      console.error("Live data fetch failed", err);
+    }
+  };
+
+  fetchLiveData(); // run immediately
+  const interval = setInterval(fetchLiveData, 5000); // refresh every 5 sec
+
+  return () => clearInterval(interval);
+}, []);
+
+
+
+
 
   const toggleTheme = () => {
     const newTheme = theme === "dark" ? "light" : "dark"
@@ -283,11 +314,14 @@ export function StudySessionDashboard() {
         .sort((a, b) => b.avgScore - a.avgScore)[0]?.time || "Morning"
 
     const heartRateTrend = filteredSessions.map((s, idx) => ({
-      session: `S${idx + 1}`, // Use index for session identifier if date is not reliable or for simpler chart labels
-      heartRate: s.avg_heart_rate_bpm,
+      session: `S${idx + 1}`,
+
+      // 🔥 USE LIVE HEART RATE IF AVAILABLE
+      heartRate: heartRate ?? s.avg_heart_rate_bpm,
+
       gsr: s.gsr_value,
-      // date: s.date, // Removed as date is not in the updated schema
-    }))
+    }));
+
     // .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()) // Removed sorting by date
 
     const timeOfDayData = Object.entries(bestTimeOfDay).map(([time, scores]) => ({
@@ -428,7 +462,7 @@ export function StudySessionDashboard() {
     }
 
     // Heart rate recommendations
-    if (analytics.avgHeartRate > 85) {
+if (heartRate && heartRate > 95) {
       recs.push({
         type: "warning",
         priority: "high",
@@ -444,7 +478,7 @@ export function StudySessionDashboard() {
         ],
         metric: `${analytics.avgHeartRate} BPM Average`,
       })
-    } else if (analytics.avgHeartRate < 75) {
+} else if (heartRate && heartRate < 75) {
       recs.push({
         type: "success",
         priority: "low",
@@ -480,31 +514,71 @@ export function StudySessionDashboard() {
 
     // Subject-specific recommendations
     // ✅ Subject-specific recommendations (AGENT-BASED)
-    Object.entries(analytics.subjectPerformance).forEach(
-      ([subject, performance]) => {
-        const focusRate =
-          performance.total > 0
-            ? Math.round((performance.focused / performance.total) * 100)
-            : 0
+Object.entries(analytics.subjectPerformance).forEach(([subject, performance]) => {
+  const focusRate =
+    performance.total > 0
+      ? Math.round((performance.focused / performance.total) * 100)
+      : 0;
 
-        if (focusRate < 50) {
-          recs.push({
-            type: "info",
-            priority: focusRate < 35 ? "high" : "medium",
-            category: "Subject Mastery",
-            title: `${subject} Needs Better Focus`,
-            description: `Only ${focusRate}% of your ${subject} sessions were in a focused state. The AI agent suggests improving study strategy for this subject.`,
-            impact: 70,
-            actionSteps: [
-              "Study this subject during your lowest-stress time of day.",
-              "Use shorter study sessions (20–30 minutes).",
-              "Revise using active recall instead of rereading.",
-              "Avoid this subject when stress trend is increasing.",
-            ],
-            metric: `${focusRate}% Focused Sessions`,
-          })
-        }}
-       )
+  let title = "";
+  let description = "";
+  let type: "warning" | "info" | "success" = "info";
+  let priority: "high" | "medium" | "low" = "medium";
+  let impact = 70;
+
+  // 🔴 HIGH HEART RATE + LOW FOCUS = STRESS SUBJECT
+  if (heartRate && heartRate > 95 && focusRate < 50) {
+    title = `${subject} is Overloading You Right Now`;
+    description = `Your heart rate is elevated (${heartRate} BPM) and focus in ${subject} is low. This subject may be causing mental strain. Study it later when you're calmer.`;
+    type = "warning";
+    priority = "high";
+    impact = 90;
+  }
+
+  // 🟠 LOW FOCUS ONLY
+  else if (focusRate < 50) {
+    title = `${subject} Needs a Better Study Strategy`;
+    description = `Only ${focusRate}% focus in ${subject}. Try shorter study sessions and active recall techniques.`;
+    type = "info";
+    priority = "medium";
+    impact = 75;
+  }
+
+  // 🟢 LOW HEART RATE + GOOD FOCUS = POWER ZONE
+  else if (heartRate && heartRate < 75 && focusRate >= 70) {
+    title = `${subject} is Perfect for Deep Study Now`;
+    description = `Your heart rate is calm (${heartRate} BPM) and focus is strong in ${subject}. This is the best time to tackle advanced topics.`;
+    type = "success";
+    priority = "low";
+    impact = 85;
+  }
+
+  // 🟡 NORMAL CASE
+  else {
+    title = `Maintain Steady Progress in ${subject}`;
+    description = `You are doing fairly well in ${subject}. Keep a balanced study routine to improve further.`;
+    type = "info";
+    priority = "low";
+    impact = 60;
+  }
+
+  recs.push({
+    type,
+    priority,
+    category: "Subject Intelligence",
+    title,
+    description,
+    impact,
+    actionSteps: [
+      "Choose study timing based on your energy level.",
+      "Use Pomodoro (25 min focus) sessions.",
+      "Take longer breaks if heart rate rises.",
+      "Switch subject if you feel mentally overloaded.",
+    ],
+    metric: `${focusRate}% Focused | HR: ${heartRate ?? "N/A"} BPM`,
+  });
+});
+
 
 
     // Break optimization
@@ -903,7 +977,7 @@ export function StudySessionDashboard() {
 
             
 
-            <div className="mb-8 grid gap-6 md:grid-cols-3">
+            <div className="mb-8 grid gap-6 md:grid-cols-4">
               {/* Card 1 - Stress Level */}
               <Card
                 className={`border-0 backdrop-blur shadow-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl ${
@@ -994,7 +1068,62 @@ export function StudySessionDashboard() {
                   </p>
                 </CardContent>
               </Card>
+              {/* Card 4 - Live Heart Rate */}
+              <Card
+                className={`border-0 backdrop-blur shadow-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl ${
+                  theme === "dark"
+                    ? "bg-gradient-to-br from-pink-500/10 via-slate-900/50 to-slate-900/50 border border-pink-500/20"
+                    : "bg-gradient-to-br from-pink-50 to-white border border-pink-100"
+                }`}
+              >
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className={`text-sm font-medium ${theme === "dark" ? "text-slate-300" : "text-gray-700"}`}>
+                    Live Heart Rate
+                  </CardTitle>
+                  <div className="rounded-lg bg-gradient-to-br from-pink-500 to-red-500 p-2.5 shadow-lg shadow-pink-500/30">
+                    <Heart className="h-5 w-5 text-white animate-pulse" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className={`text-3xl font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+                    {heartRate ? `${heartRate} BPM` : "—"}
+                  </div>
+                  <p className={`text-xs mt-2 ${theme === "dark" ? "text-slate-400" : "text-gray-600"}`}>
+                    Real-time from sensor
+                  </p>
+                </CardContent>
+              </Card>
+
             </div>
+
+                            {dynamicSchedule && (
+              <Card className="border-0 backdrop-blur shadow-xl bg-gradient-to-br from-indigo-500/10 via-slate-900/50 to-slate-900/50 border border-indigo-500/20 mb-8">
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-bold text-white mb-2">Live Adaptive Study Plan</h3>
+
+                  <p className="text-slate-300 mb-2">
+                    💓 Heart Rate: <span className="font-bold text-red-400">{heartRate} BPM</span>
+                  </p>
+
+                  <p className="text-slate-300 mb-2">
+                    🧠 Stress State: <span className="font-bold text-yellow-400">{dynamicSchedule.stress_state}</span>
+                  </p>
+
+                  <p className="text-slate-300">
+                    📚 Study Duration:{" "}
+                    <span className="font-bold text-green-400">
+                      {dynamicSchedule.recommended_study_duration} min
+                    </span>
+                    {" | "}
+                    ☕ Break:{" "}
+                    <span className="font-bold text-blue-400">
+                      {dynamicSchedule.recommended_break_duration} min
+                    </span>
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
 
             <Card
               className={`border-0 backdrop-blur shadow-xl ${
@@ -1087,8 +1216,10 @@ export function StudySessionDashboard() {
                             {session.preferred_break_duration} min
                           </td>
                           <td className="px-4 py-3 text-sm font-mono whitespace-nowrap">
-                            {session.avg_heart_rate_bpm}
+                            {heartRate ?? session.avg_heart_rate_bpm}
                           </td>
+
+
                           <td className="px-4 py-3 text-sm font-mono whitespace-nowrap">
                             {session.gsr_value.toFixed(1)}
                           </td>
@@ -1107,11 +1238,13 @@ export function StudySessionDashboard() {
                           </td>
                           <td className="px-4 py-3 text-sm whitespace-nowrap">{session.detected_study_state}</td>
                           <td className="px-4 py-3 text-sm whitespace-nowrap">
-                            {session.study_duration ?? session.recommended_study_duration ?? "—"} min
+                            {dynamicSchedule?.recommended_study_duration ?? session.recommended_study_duration} min
                           </td>
+
                           <td className="px-4 py-3 text-sm whitespace-nowrap">
-                            {session.break_duration ?? session.recommended_break_duration ?? "—"} min
+                            {dynamicSchedule?.recommended_break_duration ?? session.recommended_break_duration} min
                           </td>
+
                           <td className="px-4 py-3 text-sm whitespace-nowrap">
                             <span
                               className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
@@ -1244,8 +1377,7 @@ export function StudySessionDashboard() {
                     <TrendingUp className={`h-4 w-4 ${theme === "dark" ? "text-green-400" : "text-green-600"}`} />
                   </div>
                   <div className={`text-3xl font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
-                    {Math.round(analytics.avgHeartRate)}
-                  </div>
+                     {heartRate ? heartRate : "—"}                  </div>
                   <p className={`text-sm mt-1 ${theme === "dark" ? "text-slate-400" : "text-gray-600"}`}>
                     Avg Heart Rate (bpm)
                   </p>

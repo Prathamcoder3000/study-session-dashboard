@@ -129,7 +129,7 @@ export default function StudySetupPage() {
 
 
     const createPromises = subjects.map(async (subject) => {
-      const simulatedHeartRate = 70 + Math.floor(Math.random() * 20)
+    //  const simulatedHeartRate = 70 + Math.floor(Math.random() * 20)
       const simulatedGSR = 2.0 + Math.random() * 2.0
       const stressLevels: Array<"Low" | "Medium" | "High"> = ["Low", "Medium", "High"]
       const randomStress = stressLevels[Math.floor(Math.random() * stressLevels.length)]
@@ -162,7 +162,7 @@ export default function StudySetupPage() {
           student_id: userIdToSend,
           subject: subject.subject,
           subject_strength: subject.subject_strength, // ⚠️ NUMBER ONLY
-          heart_rate: simulatedHeartRate,
+         // heart_rate: simulatedHeartRate,
           gsr: Number.parseFloat(simulatedGSR.toFixed(2)),
         }),
       })
