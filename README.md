@@ -207,7 +207,6 @@ flowchart TD
 
 ### 🎥 Live Demo Video
 
-https://github.com/user-attachments/assets/4d752ca9-3ca6-4b43-b67e-c6fca618bd4e
 
 | Direct Streaming Options | Link |
 |---|---|
